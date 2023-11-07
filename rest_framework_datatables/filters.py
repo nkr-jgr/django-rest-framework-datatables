@@ -52,8 +52,7 @@ class DatatablesBaseFilterBackend(BaseFilterBackend):
         ret_q = Q()
         fields = datatable_query['fields']
         for f in fields:
-            if len(f['name']) == 1:
-                print(f, ' is len == 1')
+            if len(f['name']) == 1 and f['searchable']:
                 i = 0
                 qs = []
                 x = f['data']
