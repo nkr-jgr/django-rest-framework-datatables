@@ -46,6 +46,30 @@ class DatatablesBaseFilterBackend(BaseFilterBackend):
         ret['search_regex'] = get_param(request, 'search[regex]') == 'true'
         return ret
 
+
+    def get_search_pane_q(self, request, datatable_query):
+        q = Q()
+        ret_q = Q()
+        fields = datatable_query['fields']
+        for f in fields:
+            if len(f['name']) == 1:
+                print(f, ' is len == 1')
+                i = 0
+                qs = []
+                x = f['data']
+                x_name = f['name'][0]
+                while True:
+                    col = 'searchPanes[%s][%d]'
+                    data = get_param(request, col % (x, i))
+                    if data == None:
+                        break
+                    qs.append(Q(**{'%s__icontains' % x_name: data}))
+                    i += 1
+                if len(qs) > 0:
+                    q = reduce(operator.or_, qs, Q())
+                ret_q &= q
+        return ret_q
+
     def get_fields(self, request):
         """called by parse_query_params to get the list of fields"""
         fields = []
@@ -182,6 +206,8 @@ class DatatablesFilterBackend(DatatablesBaseFilterBackend):
         datatables_query = self.parse_datatables_query(request, view)
 
         q = self.get_q(datatables_query)
+        search_pane_q = self.get_search_pane_q(request, datatables_query)
+        q = (q & search_pane_q)
         if q:
             queryset = queryset.filter(q).distinct()
             filtered_count = queryset.count()
